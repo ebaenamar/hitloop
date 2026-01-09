@@ -1,0 +1,357 @@
+# HITL Lab
+
+**Human-in-the-Loop control library for AI agent workflows with LangGraph integration.**
+
+HITL Lab provides explicit control nodes for human oversight in AI agent workflows, with strong instrumentation for research experiments. Unlike passive monitoring, human approval is a first-class control signal and event in the execution trace.
+
+## Core Concept
+
+```
+LLM proposes action → HITL policy decides → Human approves/rejects → Tool executes → Telemetry logs all
+```
+
+Human approval is not a UI gimmick. It is:
+- A **control signal** that gates execution
+- A **first-class event** in the trace
+- A **research artifact** for measuring oversight effectiveness
+
+## Quick Start
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/hitl-lab/hitl-lab.git
+cd hitl-lab
+
+# Install with uv (recommended)
+uv pip install -e .
+
+# Or with pip
+pip install -e .
+
+# For development
+pip install -e ".[dev]"
+```
+
+### Run an Example
+
+```bash
+# Basic workflow (with CLI approval prompts)
+python examples/basic_workflow.py
+
+# Auto-approve mode (no prompts)
+python examples/basic_workflow.py --auto
+
+# Run a full experiment
+python examples/run_experiment.py --n-trials 20
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      LangGraph Workflow                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────────────┐  │
+│  │   LLM    │───►│  HITL    │───►│   Tool Executor      │  │
+│  │  Node    │    │  Gate    │    │                      │  │
+│  └──────────┘    └────┬─────┘    └──────────────────────┘  │
+│                       │                                     │
+│                       ▼                                     │
+│              ┌────────────────┐                             │
+│              │  HITL Policy   │                             │
+│              │  ┌──────────┐  │                             │
+│              │  │ Approval │  │◄──► Human (CLI/Web/etc)    │
+│              │  │ Backend  │  │                             │
+│              │  └──────────┘  │                             │
+│              └────────────────┘                             │
+│                       │                                     │
+│                       ▼                                     │
+│              ┌────────────────┐                             │
+│              │   Telemetry    │───► SQLite / Analysis      │
+│              │    Logger      │                             │
+│              └────────────────┘                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## API Overview
+
+### Core Models
+
+```python
+from hitl_lab import Action, Decision, RiskClass
+
+# Define an action
+action = Action(
+    tool_name="send_email",
+    tool_args={"recipient": "alice@example.com", "subject": "Hello"},
+    risk_class=RiskClass.MEDIUM,
+    side_effects=["email_sent"],
+    rationale="Sending follow-up email to client",
+)
+
+# Decisions from human review
+decision = Decision(
+    action_id=action.id,
+    approved=True,
+    reason="Verified recipient is correct",
+    decided_by="human:operator",
+    latency_ms=1500.0,
+)
+```
+
+### Policies
+
+Three built-in policies for different oversight tiers:
+
+```python
+from hitl_lab import AlwaysApprovePolicy, RiskBasedPolicy, AuditPlusEscalatePolicy
+
+# Tier 4: No human oversight (baseline)
+policy = AlwaysApprovePolicy()
+
+# Risk-based: Approve high-risk actions only
+policy = RiskBasedPolicy(
+    require_approval_for_high=True,
+    require_approval_for_medium=False,
+    high_risk_tools=["send_email", "delete_record"],
+)
+
+# Audit + Escalate: Random sampling + anomaly detection
+policy = AuditPlusEscalatePolicy(
+    audit_sample_rate=0.1,  # 10% random audit
+    escalate_on_high_risk=True,
+    anomaly_signals=["unusual_recipient", "large_amount"],
+)
+```
+
+### Adding a New Policy
+
+Create a single file in `src/hitl_lab/policies/`:
+
+```python
+# src/hitl_lab/policies/my_policy.py
+from hitl_lab.core.interfaces import HITLPolicy
+from hitl_lab.core.models import Action, Decision
+
+class MyCustomPolicy(HITLPolicy):
+    @property
+    def name(self) -> str:
+        return "my_custom"
+
+    def should_request_approval(
+        self, action: Action, state: dict
+    ) -> tuple[bool, str]:
+        # Your logic here
+        if action.tool_name in self.critical_tools:
+            return True, "Critical tool requires approval"
+        return False, "Auto-approved"
+```
+
+### LangGraph Integration
+
+```python
+from langgraph.graph import StateGraph
+from hitl_lab import hitl_gate_node, execute_tool_node, RiskBasedPolicy, CLIBackend
+
+# Create nodes
+policy = RiskBasedPolicy()
+backend = CLIBackend()
+logger = TelemetryLogger("traces.db")
+
+gate = hitl_gate_node(policy, backend, logger)
+executor = execute_tool_node(tools, logger)
+
+# Build graph
+graph = StateGraph(HITLState)
+graph.add_node("llm", llm_node)
+graph.add_node("hitl_gate", gate)
+graph.add_node("execute", executor)
+
+graph.add_edge("llm", "hitl_gate")
+graph.add_conditional_edges(
+    "hitl_gate",
+    should_execute_condition,
+    {"execute": "execute", "skip": "end"}
+)
+graph.add_edge("execute", "end")
+```
+
+## Running Experiments
+
+```python
+from hitl_lab import TelemetryLogger
+from hitl_lab.eval import ExperimentRunner, ExperimentCondition
+from hitl_lab.eval.runner import create_standard_conditions
+from hitl_lab.scenarios import EmailDraftScenario
+
+# Setup
+logger = TelemetryLogger("experiment.db")
+scenario = EmailDraftScenario()
+
+# Create standard conditions (4 policies × scenarios)
+conditions = create_standard_conditions(
+    scenario=scenario,
+    n_trials=20,
+    injection_rate=0.2,  # 20% error injection
+)
+
+# Run
+runner = ExperimentRunner(logger)
+for c in conditions:
+    runner.add_condition(c)
+
+await runner.run_all()
+
+# Export
+runner.export_results("results.csv", "summary.json")
+```
+
+### Output: results.csv
+
+| run_id | scenario_id | condition_id | policy_name | task_success | approval_requested | injected_error | error_caught |
+|--------|-------------|--------------|-------------|--------------|-------------------|----------------|--------------|
+| abc123 | email_draft | risk_based   | risk_based  | 1            | 1                 | 0              | 0            |
+| def456 | email_draft | risk_based   | risk_based  | 0            | 1                 | 1              | 1            |
+
+### Output: summary.json
+
+```json
+{
+  "risk_based": {
+    "n_runs": 20,
+    "success_rate": 0.85,
+    "approval_rate": 0.65,
+    "error_catch_rate": 0.75,
+    "false_reject_rate": 0.05,
+    "human_latency_mean_ms": 1200.5
+  }
+}
+```
+
+## Research Alignment
+
+HITL Lab metrics map directly to the research framework:
+
+| Metric | Research Concept | Description |
+|--------|------------------|-------------|
+| `success_rate` | Quality | Task completion rate |
+| `approval_rate` | Leverage proxy | Human involvement frequency |
+| `error_catch_rate` | Appropriate reliance | Injected error detection |
+| `false_reject_rate` | Appropriate reliance | Unnecessary rejections |
+| `human_latency_ms` | Human burden | Time cost per decision |
+| `cost_proxy` | Efficiency | Token/call overhead |
+
+### Injected Errors for Ground Truth
+
+The error injector provides ground truth for measuring oversight effectiveness:
+
+```python
+from hitl_lab.eval import ErrorInjector, InjectionConfig
+
+injector = ErrorInjector(InjectionConfig(
+    injection_rate=0.2,
+    injection_types=[
+        InjectionType.WRONG_RECIPIENT,
+        InjectionType.WRONG_RECORD_ID,
+    ]
+))
+
+# Every action has known correctness
+result = injector.maybe_inject(action)
+if result.injected:
+    # This action is KNOWN to be wrong
+    # If human approves it → false negative
+    # If human rejects it → true positive (error caught)
+```
+
+## Project Structure
+
+```
+hitl_lab/
+├── src/hitl_lab/
+│   ├── core/
+│   │   ├── models.py      # Action, Decision, TraceEvent
+│   │   ├── interfaces.py  # ApprovalBackend, HITLPolicy
+│   │   └── logger.py      # TelemetryLogger (SQLite)
+│   ├── policies/
+│   │   ├── always_approve.py
+│   │   ├── risk_based.py
+│   │   └── audit_plus_escalate.py
+│   ├── backends/
+│   │   ├── cli_backend.py
+│   │   └── humanlayer_backend.py  # Optional
+│   ├── langgraph/
+│   │   └── nodes.py       # hitl_gate_node, execute_tool_node
+│   ├── scenarios/
+│   │   ├── email_draft.py
+│   │   └── record_update.py
+│   └── eval/
+│       ├── runner.py      # ExperimentRunner
+│       ├── injectors.py   # ErrorInjector
+│       └── metrics.py     # MetricsCalculator
+├── tests/
+├── examples/
+├── pyproject.toml
+└── README.md
+```
+
+## Instrumentation
+
+Every run emits structured events:
+
+```python
+# Per run
+{
+    "run_id": "abc123",
+    "scenario_id": "email_draft",
+    "condition_id": "risk_based",
+    "seed": 42
+}
+
+# Per action
+{
+    "action_id": "xyz789",
+    "tool_name": "send_email",
+    "args_hash": "a1b2c3d4",
+    "risk_class": "medium",
+    "injected_error": false
+}
+
+# Per approval
+{
+    "channel": "cli",
+    "latency_ms": 1250.0,
+    "decision": true,
+    "decided_by": "human"
+}
+
+# Per execution
+{
+    "success": true,
+    "execution_time_ms": 45.2
+}
+```
+
+## Development
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Type checking
+mypy src/hitl_lab
+
+# Linting
+ruff check src/hitl_lab
+ruff format src/hitl_lab
+```
+
+## License
+
+MIT License - see LICENSE file.

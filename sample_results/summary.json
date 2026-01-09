@@ -1,0 +1,58 @@
+{
+  "always_approve": {
+    "policy_name": "always_approve",
+    "n_runs": 20,
+    "success_rate": 0.8,
+    "approval_rate": 0.0,
+    "human_latency_mean_ms": 0.0,
+    "human_latency_p95_ms": 0.0,
+    "time_to_complete_mean_ms": 41.76,
+    "time_to_complete_p95_ms": 44.52,
+    "error_catch_rate": 0.0,
+    "false_reject_rate": 0.0,
+    "tool_failure_rate": 0.0,
+    "cost_proxy": 0
+  },
+  "risk_based_auto": {
+    "policy_name": "risk_based",
+    "n_runs": 20,
+    "success_rate": 0.8,
+    "approval_rate": 1.0,
+    "human_latency_mean_ms": 50.57,
+    "human_latency_p95_ms": 53.42,
+    "time_to_complete_mean_ms": 96.56,
+    "time_to_complete_p95_ms": 101.82,
+    "error_catch_rate": 0.0,
+    "false_reject_rate": 0.0,
+    "tool_failure_rate": 0.0,
+    "cost_proxy": 0
+  },
+  "risk_based_human": {
+    "policy_name": "risk_based",
+    "n_runs": 20,
+    "success_rate": 0.95,
+    "approval_rate": 1.0,
+    "human_latency_mean_ms": 505.69,
+    "human_latency_p95_ms": 534.78,
+    "time_to_complete_mean_ms": 552.23,
+    "time_to_complete_p95_ms": 591.45,
+    "error_catch_rate": 0.75,
+    "false_reject_rate": 0.0,
+    "tool_failure_rate": 0.0,
+    "cost_proxy": 0
+  },
+  "audit_escalate": {
+    "policy_name": "audit_plus_escalate",
+    "n_runs": 20,
+    "success_rate": 0.95,
+    "approval_rate": 0.6,
+    "human_latency_mean_ms": 305.49,
+    "human_latency_p95_ms": 326.87,
+    "time_to_complete_mean_ms": 263.52,
+    "time_to_complete_p95_ms": 381.43,
+    "error_catch_rate": 0.75,
+    "false_reject_rate": 0.0,
+    "tool_failure_rate": 0.0,
+    "cost_proxy": 0
+  }
+}
