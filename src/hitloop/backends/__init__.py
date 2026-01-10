@@ -1,7 +1,15 @@
 """Approval backend implementations."""
 
-from hitloop.backends.cli_backend import CLIBackend
+from hitloop.backends.cli_backend import (
+    AutoApproveBackend,
+    AutoRejectBackend,
+    CLIBackend,
+    ScriptedBackend,
+)
 
 __all__ = [
+    "AutoApproveBackend",
+    "AutoRejectBackend",
     "CLIBackend",
+    "ScriptedBackend",
 ]

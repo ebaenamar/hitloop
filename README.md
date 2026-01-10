@@ -152,31 +152,44 @@ class MyCustomPolicy(HITLPolicy):
 
 ### LangGraph Integration
 
+Add human approval to any LangGraph agent:
+
 ```python
-from langgraph.graph import StateGraph
-from hitloop import hitl_gate_node, execute_tool_node, RiskBasedPolicy, CLIBackend
+from hitloop import RiskBasedPolicy, ApprovalRequest, Action, Decision, RiskClass
+from hitloop.backends import AutoApproveBackend, CLIBackend
 
-# Create nodes
-policy = RiskBasedPolicy()
-backend = CLIBackend()
-logger = TelemetryLogger("traces.db")
-
-gate = hitl_gate_node(policy, backend, logger)
-executor = execute_tool_node(tools, logger)
-
-# Build graph
-graph = StateGraph(HITLState)
-graph.add_node("llm", llm_node)
-graph.add_node("hitl_gate", gate)
-graph.add_node("execute", executor)
-
-graph.add_edge("llm", "hitl_gate")
-graph.add_conditional_edges(
-    "hitl_gate",
-    should_execute_condition,
-    {"execute": "execute", "skip": "end"}
+# 1. Configure policy - which actions need approval?
+policy = RiskBasedPolicy(
+    require_approval_for_high=True,
+    high_risk_tools=["send_email", "delete_file", "transfer_money"],
 )
-graph.add_edge("execute", "end")
+
+# 2. Choose backend - how to get approval?
+backend = CLIBackend()  # Interactive CLI prompts
+# backend = AutoApproveBackend()  # For testing
+
+# 3. In your LangGraph node, check if approval is needed:
+async def hitl_gate_node(state):
+    action = state["pending_action"]
+    needs_approval, reason = policy.should_request_approval(action, state)
+    
+    if needs_approval:
+        request = ApprovalRequest(run_id="my-run", action=action)
+        decision = await backend.request_approval(request)
+        return {"approval_decision": decision}
+    else:
+        # Auto-approve low-risk actions
+        return {"approval_decision": Decision(action_id=action.id, approved=True)}
+```
+
+**Full working example:** See `examples/langgraph_agent.py`
+
+```bash
+# Run with simulated LLM (no API key needed)
+python examples/langgraph_agent.py --simulate --auto
+
+# With CLI approval prompts
+python examples/langgraph_agent.py --simulate
 ```
 
 ## Running Experiments
