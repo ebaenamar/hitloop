@@ -37,7 +37,10 @@ pip install -e ".[dev]"
 ### Run an Example
 
 ```bash
-# Basic workflow (with CLI approval prompts)
+# Recommended: Using LangGraph's native interrupt() (v0.4.0+)
+python examples/interrupt_example.py
+
+# Legacy: CLI-based approval prompts
 python examples/basic_workflow.py
 
 # Auto-approve mode (no prompts)
@@ -236,6 +239,47 @@ uvicorn examples.webhook_server:app --port 8000
 curl -X POST http://localhost:8000/test/request-approval
 # Then approve/reject via the callback URL shown in console
 ```
+
+## Using LangGraph's Native interrupt() (Recommended)
+
+**New in v0.4.0**: hitloop now supports LangGraph's native `interrupt()` function for human-in-the-loop. This is the recommended approach as it:
+- Uses LangGraph's built-in checkpointing for persistence
+- Is compatible with **agent-inbox** and **LangGraph Studio**
+- Follows LangGraph's standard patterns
+
+```python
+from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import Command
+
+from hitloop import RiskBasedPolicy
+from hitloop.langgraph import create_interrupt_gate_node, create_interrupt_tool_node, should_execute
+
+# Setup
+policy = RiskBasedPolicy(high_risk_tools=["send_email", "delete_file"])
+gate = create_interrupt_gate_node(policy)
+executor = create_interrupt_tool_node({"send_email": send_email_func})
+
+# Build graph
+builder = StateGraph(MyState)
+builder.add_node("hitl_gate", gate)
+builder.add_node("execute", executor)
+builder.add_conditional_edges("hitl_gate", should_execute, {"execute": "execute", "skip": END})
+
+graph = builder.compile(checkpointer=MemorySaver())
+
+# Run - will pause at interrupt for high-risk actions
+config = {"configurable": {"thread_id": "user-123"}}
+result = graph.invoke({"proposed_action": action}, config)
+
+# Check for interrupt
+if "__interrupt__" in result:
+    print(result["__interrupt__"])  # Shows approval request
+    # Resume with human decision
+    graph.invoke(Command(resume={"approved": True, "decided_by": "human:alice"}), config)
+```
+
+**Full example:** See `examples/interrupt_example.py`
 
 ## Production Deployment
 

@@ -21,7 +21,7 @@ from hitloop.policies.risk_based import RiskBasedPolicy
 from hitloop.policies.audit_plus_escalate import AuditPlusEscalatePolicy
 from hitloop.langgraph.nodes import hitl_gate_node, execute_tool_node
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     # Models

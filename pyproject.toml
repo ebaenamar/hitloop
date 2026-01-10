@@ -1,6 +1,6 @@
 [project]
 name = "hitloop"
-version = "0.3.0"
+version = "0.4.0"
 description = "Keep humans in the loop. HITL control library for AI agent workflows with LangGraph."
 readme = "README.md"
 license = {text = "MIT"}
