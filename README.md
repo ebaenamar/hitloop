@@ -192,6 +192,51 @@ python examples/langgraph_agent.py --simulate --auto
 python examples/langgraph_agent.py --simulate
 ```
 
+### Third-Party Integrations (Slack, Telegram, Discord, etc.)
+
+hitloop is **completely agnostic** to your approval channel. Use `WebhookBackend` to integrate with any service:
+
+```python
+from hitloop.backends import WebhookBackend
+
+# Your custom function to send to Slack/Telegram/Discord/etc.
+async def send_to_slack(request, callback_id, callback_url):
+    await slack_client.chat_postMessage(
+        channel="#approvals",
+        text=f"Approve {request.action.tool_name}?",
+        # Include buttons that POST to callback_url
+    )
+
+backend = WebhookBackend(
+    send_request=send_to_slack,
+    timeout_seconds=300,  # 5 min timeout (rejects if no response)
+    callback_base_url="https://your-app.com/hitloop/callback",
+)
+
+# In your webhook handler (FastAPI/Flask):
+@app.post("/hitloop/callback/{callback_id}")
+async def handle_callback(callback_id: str, data: dict):
+    await backend.handle_callback(
+        callback_id=callback_id,
+        approved=data["approved"],
+        decided_by=f"slack:{data['user']}",
+    )
+```
+
+**Full working example:** See `examples/webhook_server.py`
+
+```bash
+# Install server dependencies
+pip install hitloop[server]
+
+# Run the webhook server
+uvicorn examples.webhook_server:app --port 8000
+
+# Test with curl
+curl -X POST http://localhost:8000/test/request-approval
+# Then approve/reject via the callback URL shown in console
+```
+
 ## Running Experiments
 
 ```python

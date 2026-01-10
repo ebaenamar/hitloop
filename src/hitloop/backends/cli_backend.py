@@ -33,6 +33,7 @@ class CLIBackend(ApprovalBackend):
         self,
         auto_approve: bool = False,
         auto_approve_delay_ms: float = 0.0,
+        timeout_seconds: float = 0.0,
         input_func: Callable[[], str] | None = None,
         output_func: Callable[[str], None] | None = None,
     ) -> None:
@@ -41,11 +42,13 @@ class CLIBackend(ApprovalBackend):
         Args:
             auto_approve: If True, automatically approve all requests
             auto_approve_delay_ms: Simulated delay for auto-approval (ms)
+            timeout_seconds: Timeout for human response (0 = no timeout)
             input_func: Custom input function (for testing), defaults to input()
             output_func: Custom output function (for testing), defaults to print()
         """
         self.auto_approve = auto_approve
         self.auto_approve_delay_ms = auto_approve_delay_ms
+        self.timeout_seconds = timeout_seconds
         self._input_func = input_func or (lambda: input())
         self._output_func = output_func or print
 
@@ -81,9 +84,26 @@ class CLIBackend(ApprovalBackend):
         # Display the request
         self._output_func(request.format_for_display())
 
-        # Get decision
+        # Get decision (with optional timeout)
         try:
-            approved = await self._get_yes_no_input("Approve this action? (y/n): ")
+            if self.timeout_seconds > 0:
+                try:
+                    approved = await asyncio.wait_for(
+                        self._get_yes_no_input("Approve this action? (y/n): "),
+                        timeout=self.timeout_seconds
+                    )
+                except asyncio.TimeoutError:
+                    self._output_func(f"\n⏰ Timeout after {self.timeout_seconds}s - auto-rejecting")
+                    latency_ms = (time.time() - start_time) * 1000
+                    return Decision(
+                        action_id=request.action.id,
+                        approved=False,
+                        reason=f"Timeout after {self.timeout_seconds}s",
+                        decided_by="cli:timeout",
+                        latency_ms=latency_ms,
+                    )
+            else:
+                approved = await self._get_yes_no_input("Approve this action? (y/n): ")
         except KeyboardInterrupt:
             raise ApprovalCancelledError("User cancelled approval")
 
