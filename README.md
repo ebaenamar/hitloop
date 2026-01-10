@@ -237,6 +237,74 @@ curl -X POST http://localhost:8000/test/request-approval
 # Then approve/reject via the callback URL shown in console
 ```
 
+## Production Deployment
+
+### Persistent Storage (Survives Restarts)
+
+hitloop follows LangGraph's pattern for pluggable storage backends:
+
+```bash
+# Install with your preferred backend
+pip install hitloop[postgres]  # PostgreSQL
+pip install hitloop[redis]     # Redis
+```
+
+```python
+from hitloop.persistence import PostgresApprovalStore, RedisApprovalStore
+from hitloop.backends import PersistentWebhookBackend
+
+# PostgreSQL (recommended for most cases)
+store = await PostgresApprovalStore.from_conn_string(
+    "postgresql://user:pass@localhost:5432/hitloop"
+)
+await store.setup()  # Creates tables
+
+# Or Redis (faster, built-in TTL)
+store = await RedisApprovalStore.from_url("redis://localhost:6379/0")
+
+# Use with PersistentWebhookBackend
+backend = PersistentWebhookBackend(
+    send_request=my_slack_sender,
+    store=store,
+    timeout_seconds=300,
+)
+```
+
+### Retry & Circuit Breaker
+
+Built-in resilience for production:
+
+```python
+from hitloop.backends import PersistentWebhookBackend, RetryConfig, CircuitBreakerConfig
+
+backend = PersistentWebhookBackend(
+    send_request=my_sender,
+    store=store,
+    retry_config=RetryConfig(
+        max_retries=3,
+        initial_delay=1.0,
+        exponential_base=2.0,
+    ),
+    circuit_breaker_config=CircuitBreakerConfig(
+        failure_threshold=5,    # Open after 5 failures
+        recovery_timeout=30.0,  # Try again after 30s
+    ),
+)
+
+# Check circuit state
+print(backend.get_circuit_state())  # CLOSED, OPEN, or HALF_OPEN
+```
+
+### Recovery After Restart
+
+```python
+# On startup, recover pending requests
+pending = await store.list_pending(thread_id="user-123")
+for record in pending:
+    # Re-send or resolve as needed
+    future = backend.register_pending(record)
+```
+
 ## Running Experiments
 
 ```python

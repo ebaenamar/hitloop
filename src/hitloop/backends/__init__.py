@@ -10,6 +10,12 @@ from hitloop.backends.webhook_backend import (
     WebhookBackend,
     SimpleHTTPWebhookBackend,
 )
+from hitloop.backends.persistent_webhook import (
+    PersistentWebhookBackend,
+    RetryConfig,
+    CircuitBreakerConfig,
+    CircuitState,
+)
 
 __all__ = [
     "AutoApproveBackend",
@@ -18,4 +24,8 @@ __all__ = [
     "ScriptedBackend",
     "WebhookBackend",
     "SimpleHTTPWebhookBackend",
+    "PersistentWebhookBackend",
+    "RetryConfig",
+    "CircuitBreakerConfig",
+    "CircuitState",
 ]

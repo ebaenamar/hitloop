@@ -1,6 +1,6 @@
 [project]
 name = "hitloop"
-version = "0.2.0"
+version = "0.3.0"
 description = "Keep humans in the loop. HITL control library for AI agent workflows with LangGraph."
 readme = "README.md"
 license = {text = "MIT"}
@@ -34,6 +34,12 @@ server = [
     "uvicorn>=0.27.0",
     "aiohttp>=3.9.0",
 ]
+postgres = [
+    "asyncpg>=0.29.0",
+]
+redis = [
+    "redis>=5.0.0",
+]
 humanlayer = [
     "humanlayer>=0.6.0",
 ]
@@ -45,7 +51,7 @@ dev = [
     "mypy>=1.8.0",
 ]
 all = [
-    "hitloop[server,humanlayer,dev]",
+    "hitloop[server,postgres,redis,humanlayer,dev]",
 ]
 
 [project.urls]
