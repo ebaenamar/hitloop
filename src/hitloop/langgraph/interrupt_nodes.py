@@ -22,30 +22,46 @@ from hitloop.core.logger import TelemetryLogger
 from hitloop.core.models import Action, Decision, ToolResult
 
 
-class HITLInterruptPayload(TypedDict):
-    """Standard payload format for HITL interrupts.
+class HumanInterruptConfig(TypedDict):
+    """Configuration for what actions are allowed on an interrupt.
     
-    This format is designed to be compatible with agent-inbox and
-    other LangGraph ecosystem tools.
+    This is the exact format expected by agent-inbox.
     """
-    type: str  # "hitloop:approval_request"
-    action_id: str
-    tool_name: str
-    tool_args: dict[str, Any]
-    risk_class: str
-    policy_name: str
-    policy_reason: str
-    summary: str
-    context: str
-    timestamp: str
+    allow_ignore: bool
+    allow_respond: bool
+    allow_edit: bool
+    allow_accept: bool
 
 
-class HITLResumePayload(TypedDict, total=False):
-    """Expected format when resuming from an interrupt."""
-    approved: bool
-    reason: str
-    decided_by: str
-    tags: list[str]
+class ActionRequest(TypedDict):
+    """Action request format for agent-inbox."""
+    action: str
+    args: dict[str, Any]
+
+
+class HumanInterrupt(TypedDict, total=False):
+    """Interrupt payload format compatible with agent-inbox.
+    
+    This is the exact schema expected by LangChain's agent-inbox UI.
+    See: https://github.com/langchain-ai/agent-inbox
+    """
+    action_request: ActionRequest
+    config: HumanInterruptConfig
+    description: str  # Markdown description for the UI
+
+
+class HumanResponse(TypedDict, total=False):
+    """Response format from agent-inbox.
+    
+    The agent-inbox always returns a list with a single HumanResponse.
+    """
+    type: Literal["accept", "ignore", "response", "edit"]
+    args: Any  # None, str, or ActionRequest depending on type
+
+
+# Legacy aliases for backwards compatibility
+HITLInterruptPayload = HumanInterrupt
+HITLResumePayload = HumanResponse
 
 
 def create_interrupt_gate_node(
@@ -136,34 +152,69 @@ def create_interrupt_gate_node(
             logger.log_approval_requested(run_id, request, channel="interrupt")
         
         # Create interrupt payload (compatible with agent-inbox)
-        interrupt_payload: HITLInterruptPayload = {
-            "type": "hitloop:approval_request",
-            "action_id": action.id,
-            "tool_name": action.tool_name,
-            "tool_args": action.tool_args,
-            "risk_class": action.risk_class.value,
-            "policy_name": policy.name,
-            "policy_reason": policy_reason,
-            "summary": action.summary(),
-            "context": _build_summary_context(state),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+        # See: https://github.com/langchain-ai/agent-inbox
+        description = _build_interrupt_description(action, policy_reason, state)
+        
+        interrupt_payload: HumanInterrupt = {
+            "action_request": {
+                "action": action.tool_name,
+                "args": action.tool_args,
+            },
+            "config": {
+                "allow_ignore": True,   # Can skip/reject
+                "allow_respond": True,  # Can add a comment
+                "allow_edit": True,     # Can modify args
+                "allow_accept": True,   # Can approve as-is
+            },
+            "description": description,
         }
         
         # Use LangGraph's native interrupt - this pauses the graph
         # and waits for Command(resume=...) to continue
-        resume_value: HITLResumePayload = interrupt(interrupt_payload)
+        # agent-inbox returns a list with a single HumanResponse
+        resume_value = interrupt(interrupt_payload)
         
-        # When resumed, resume_value contains the human's decision
-        approved = resume_value.get("approved", False)
-        reason = resume_value.get("reason", "Approved" if approved else "Rejected")
-        decided_by = resume_value.get("decided_by", "human")
+        # Handle both list (from agent-inbox) and dict (from manual resume)
+        if isinstance(resume_value, list):
+            response: HumanResponse = resume_value[0] if resume_value else {"type": "ignore", "args": None}
+        else:
+            response = resume_value
+        
+        # Parse the response based on type
+        response_type = response.get("type", "ignore")
+        response_args = response.get("args")
+        
+        if response_type == "accept":
+            approved = True
+            reason = "Accepted by human"
+            decided_by = "human:accept"
+        elif response_type == "edit":
+            approved = True
+            reason = "Accepted with edits"
+            decided_by = "human:edit"
+            # Update action args if edited
+            if isinstance(response_args, dict) and "args" in response_args:
+                action = Action(
+                    tool_name=response_args.get("action", action.tool_name),
+                    tool_args=response_args.get("args", action.tool_args),
+                    risk_class=action.risk_class,
+                    rationale=action.rationale,
+                )
+        elif response_type == "response":
+            # Human provided a text response - treat as rejection with reason
+            approved = False
+            reason = str(response_args) if response_args else "Rejected with response"
+            decided_by = "human:response"
+        else:  # ignore
+            approved = False
+            reason = "Ignored by human"
+            decided_by = "human:ignore"
         
         decision = Decision(
             action_id=action.id,
             approved=approved,
             reason=reason,
             decided_by=decided_by,
-            tags=resume_value.get("tags", []),
         )
         
         if logger:
@@ -315,3 +366,41 @@ def _build_summary_context(state: dict[str, Any]) -> str:
         return "Recent conversation:\n" + "\n".join(context_parts)
     
     return ""
+
+
+def _build_interrupt_description(
+    action: Action,
+    policy_reason: str,
+    state: dict[str, Any],
+) -> str:
+    """Build a markdown description for agent-inbox.
+    
+    This is rendered in the agent-inbox UI as the main description
+    of the interrupt event.
+    """
+    import json
+    
+    args_str = json.dumps(action.tool_args, indent=2)
+    context = _build_summary_context(state)
+    
+    description = f"""## Approval Required
+
+**Tool:** `{action.tool_name}`  
+**Risk Level:** {action.risk_class.value.upper()}
+
+### Why approval is needed
+{policy_reason}
+
+### Arguments
+```json
+{args_str}
+```
+"""
+    
+    if action.rationale:
+        description += f"\n### Rationale\n{action.rationale}\n"
+    
+    if context:
+        description += f"\n### Context\n{context}\n"
+    
+    return description

@@ -213,12 +213,15 @@ def main():
     if "__interrupt__" in result:
         interrupt_info = result["__interrupt__"]
         print(f"🛑 INTERRUPT: Waiting for human approval")
-        print(f"   Payload: {interrupt_info[0].value if interrupt_info else 'N/A'}")
+        if interrupt_info:
+            payload = interrupt_info[0].value
+            print(f"   Action: {payload.get('action_request', {}).get('action', 'N/A')}")
         
-        # Simulate human approval
-        print("\n   [Simulating human approval...]")
+        # Simulate human approval using agent-inbox format
+        # agent-inbox returns: [{"type": "accept"|"ignore"|"response"|"edit", "args": ...}]
+        print("\n   [Simulating human approval via agent-inbox format...]")
         resumed = graph.invoke(
-            Command(resume={"approved": True, "reason": "Looks good", "decided_by": "human:alice"}),
+            Command(resume=[{"type": "accept", "args": None}]),
             config,
         )
         print(f"Result after approval: {resumed.get('final_response')}")
@@ -237,10 +240,10 @@ def main():
     if "__interrupt__" in result:
         print(f"🛑 INTERRUPT: Waiting for human approval")
         
-        # Simulate human rejection
-        print("   [Simulating human rejection...]")
+        # Simulate human rejection using agent-inbox "ignore" type
+        print("   [Simulating human rejection via agent-inbox format...]")
         resumed = graph.invoke(
-            Command(resume={"approved": False, "reason": "Too risky", "decided_by": "human:bob"}),
+            Command(resume=[{"type": "ignore", "args": None}]),
             config,
         )
         print(f"Result after rejection: {resumed.get('final_response')}")
