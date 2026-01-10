@@ -20,7 +20,6 @@ from hitloop.core.models import (
     Action,
     ApprovalRequest,
     Decision,
-    RiskClass,
     ToolResult,
 )
 

@@ -9,12 +9,11 @@ from __future__ import annotations
 import csv
 import json
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from hitloop.core.logger import TelemetryLogger
-from hitloop.core.models import EventType, RunMetadata
+from hitloop.core.models import EventType
 
 
 @dataclass

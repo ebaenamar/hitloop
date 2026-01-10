@@ -6,10 +6,8 @@ Uses SQLite for persistence with explicit side effects.
 
 from __future__ import annotations
 
-import json
 import random
 import sqlite3
-import uuid
 from pathlib import Path
 from typing import Any, Callable
 

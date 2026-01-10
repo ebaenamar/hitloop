@@ -75,7 +75,7 @@ class TestEmailDraftScenario:
             tools = scenario.get_tools()
 
             result = tools["send_email"](
-                recipient="hacker@evil.com",
+                recipient="phishing@evil.com",  # Must be in INVALID_RECIPIENTS list
                 subject="Test",
                 body="Body",
             )

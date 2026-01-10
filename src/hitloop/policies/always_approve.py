@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from hitloop.core.interfaces import HITLPolicy
-from hitloop.core.models import Action, Decision
+from hitloop.core.models import Action
 
 
 class AlwaysApprovePolicy(HITLPolicy):

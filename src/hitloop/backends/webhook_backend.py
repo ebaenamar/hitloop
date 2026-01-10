@@ -21,14 +21,13 @@ You just need to:
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Callable, Awaitable
+from typing import Callable, Awaitable
 from datetime import datetime, timezone
 
-from hitloop.core.interfaces import ApprovalBackend, ApprovalTimeoutError
+from hitloop.core.interfaces import ApprovalBackend
 from hitloop.core.models import ApprovalRequest, Decision
 
 

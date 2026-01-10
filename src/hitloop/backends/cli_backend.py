@@ -7,7 +7,6 @@ suitable for local development and testing.
 from __future__ import annotations
 
 import asyncio
-import sys
 import time
 from typing import Callable
 
@@ -93,7 +92,7 @@ class CLIBackend(ApprovalBackend):
                         timeout=self.timeout_seconds
                     )
                 except asyncio.TimeoutError:
-                    self._output_func(f"\n⏰ Timeout after {self.timeout_seconds}s - auto-rejecting")
+                    self._output_func(f"\n⏰ Timeout after {self.timeout_seconds}s - rejecting")
                     latency_ms = (time.time() - start_time) * 1000
                     return Decision(
                         action_id=request.action.id,

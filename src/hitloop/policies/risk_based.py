@@ -85,10 +85,10 @@ class RiskBasedPolicy(HITLPolicy):
 
         # Check risk class
         if action.risk_class == RiskClass.HIGH and self.require_approval_for_high:
-            return True, f"Action has HIGH risk classification"
+            return True, "Action has HIGH risk classification"
 
         if action.risk_class == RiskClass.MEDIUM and self.require_approval_for_medium:
-            return True, f"Action has MEDIUM risk classification"
+            return True, "Action has MEDIUM risk classification"
 
         # Check sensitive argument patterns
         for arg_name, sensitive_values in self.sensitive_arg_patterns.items():

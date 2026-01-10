@@ -8,15 +8,14 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
 from hitloop.backends.cli_backend import AutoApproveBackend, ScriptedBackend
 from hitloop.core.interfaces import ApprovalBackend, HITLPolicy
 from hitloop.core.logger import TelemetryLogger
-from hitloop.core.models import Action, ApprovalRequest, Decision, RunMetadata
+from hitloop.core.models import ApprovalRequest, RunMetadata
 from hitloop.eval.injectors import ErrorInjector, InjectionConfig
 from hitloop.eval.metrics import MetricsCalculator
 from hitloop.scenarios.base import Scenario
