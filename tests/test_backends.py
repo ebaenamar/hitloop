@@ -2,8 +2,8 @@
 
 import pytest
 
-from hitl_lab.core.models import Action, ApprovalRequest
-from hitl_lab.backends.cli_backend import (
+from hitloop.core.models import Action, ApprovalRequest
+from hitloop.backends.cli_backend import (
     AutoApproveBackend,
     AutoRejectBackend,
     ScriptedBackend,

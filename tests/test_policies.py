@@ -2,10 +2,10 @@
 
 import pytest
 
-from hitl_lab.core.models import Action, Decision, RiskClass
-from hitl_lab.policies.always_approve import AlwaysApprovePolicy
-from hitl_lab.policies.risk_based import RiskBasedPolicy
-from hitl_lab.policies.audit_plus_escalate import AuditPlusEscalatePolicy
+from hitloop.core.models import Action, Decision, RiskClass
+from hitloop.policies.always_approve import AlwaysApprovePolicy
+from hitloop.policies.risk_based import RiskBasedPolicy
+from hitloop.policies.audit_plus_escalate import AuditPlusEscalatePolicy
 
 
 class TestAlwaysApprovePolicy:

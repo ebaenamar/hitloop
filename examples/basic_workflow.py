@@ -19,14 +19,14 @@ from pathlib import Path
 # Add src to path for development
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from hitl_lab import (
+from hitloop import (
     CLIBackend,
     RiskBasedPolicy,
     TelemetryLogger,
 )
-from hitl_lab.backends.cli_backend import AutoApproveBackend
-from hitl_lab.core.models import ApprovalRequest, RunMetadata
-from hitl_lab.scenarios.email_draft import EmailDraftScenario
+from hitloop.backends.cli_backend import AutoApproveBackend
+from hitloop.core.models import ApprovalRequest, RunMetadata
+from hitloop.scenarios.email_draft import EmailDraftScenario
 
 
 async def run_workflow(auto_approve: bool = False) -> None:

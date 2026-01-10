@@ -1,0 +1,8 @@
+{
+  "email_id": "4f3ae9a7",
+  "recipient": "dave@example.com",
+  "subject": "Project update",
+  "body": "Hello,\n\nThis is a test email regarding: project update.\n\nBest regards",
+  "extra": {},
+  "status": "sent"
+}

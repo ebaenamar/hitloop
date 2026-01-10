@@ -7,16 +7,16 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from hitl_lab import (
+from hitloop import (
     TelemetryLogger,
     RiskBasedPolicy,
 )
-from hitl_lab.backends.cli_backend import AutoApproveBackend, ScriptedBackend
-from hitl_lab.core.models import Action, ApprovalRequest, RiskClass, RunMetadata
-from hitl_lab.eval.runner import ExperimentRunner, ExperimentCondition
-from hitl_lab.eval.injectors import InjectionConfig
-from hitl_lab.eval.metrics import MetricsCalculator
-from hitl_lab.scenarios.email_draft import EmailDraftScenario
+from hitloop.backends.cli_backend import AutoApproveBackend, ScriptedBackend
+from hitloop.core.models import Action, ApprovalRequest, RiskClass, RunMetadata
+from hitloop.eval.runner import ExperimentRunner, ExperimentCondition
+from hitloop.eval.injectors import InjectionConfig
+from hitloop.eval.metrics import MetricsCalculator
+from hitloop.scenarios.email_draft import EmailDraftScenario
 
 
 class TestEndToEndWorkflow:

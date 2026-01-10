@@ -1,8 +1,8 @@
-# HITL Lab
+# hitloop
 
 **Human-in-the-Loop control library for AI agent workflows with LangGraph integration.**
 
-HITL Lab provides explicit control nodes for human oversight in AI agent workflows, with strong instrumentation for research experiments. Unlike passive monitoring, human approval is a first-class control signal and event in the execution trace.
+hitloop provides explicit control nodes for human oversight in AI agent workflows, with strong instrumentation for research experiments. Unlike passive monitoring, human approval is a first-class control signal and event in the execution trace.
 
 ## Core Concept
 
@@ -21,8 +21,8 @@ Human approval is not a UI gimmick. It is:
 
 ```bash
 # Clone the repository
-git clone https://github.com/hitl-lab/hitl-lab.git
-cd hitl-lab
+git clone https://github.com/ebaenamar/hitloop.git
+cd hitloop
 
 # Install with uv (recommended)
 uv pip install -e .
@@ -81,7 +81,7 @@ python examples/run_experiment.py --n-trials 20
 ### Core Models
 
 ```python
-from hitl_lab import Action, Decision, RiskClass
+from hitloop import Action, Decision, RiskClass
 
 # Define an action
 action = Action(
@@ -107,7 +107,7 @@ decision = Decision(
 Three built-in policies for different oversight tiers:
 
 ```python
-from hitl_lab import AlwaysApprovePolicy, RiskBasedPolicy, AuditPlusEscalatePolicy
+from hitloop import AlwaysApprovePolicy, RiskBasedPolicy, AuditPlusEscalatePolicy
 
 # Tier 4: No human oversight (baseline)
 policy = AlwaysApprovePolicy()
@@ -129,12 +129,12 @@ policy = AuditPlusEscalatePolicy(
 
 ### Adding a New Policy
 
-Create a single file in `src/hitl_lab/policies/`:
+Create a single file in `src/hitloop/policies/`:
 
 ```python
-# src/hitl_lab/policies/my_policy.py
-from hitl_lab.core.interfaces import HITLPolicy
-from hitl_lab.core.models import Action, Decision
+# src/hitloop/policies/my_policy.py
+from hitloop.core.interfaces import HITLPolicy
+from hitloop.core.models import Action, Decision
 
 class MyCustomPolicy(HITLPolicy):
     @property
@@ -154,7 +154,7 @@ class MyCustomPolicy(HITLPolicy):
 
 ```python
 from langgraph.graph import StateGraph
-from hitl_lab import hitl_gate_node, execute_tool_node, RiskBasedPolicy, CLIBackend
+from hitloop import hitl_gate_node, execute_tool_node, RiskBasedPolicy, CLIBackend
 
 # Create nodes
 policy = RiskBasedPolicy()
@@ -182,10 +182,10 @@ graph.add_edge("execute", "end")
 ## Running Experiments
 
 ```python
-from hitl_lab import TelemetryLogger
-from hitl_lab.eval import ExperimentRunner, ExperimentCondition
-from hitl_lab.eval.runner import create_standard_conditions
-from hitl_lab.scenarios import EmailDraftScenario
+from hitloop import TelemetryLogger
+from hitloop.eval import ExperimentRunner, ExperimentCondition
+from hitloop.eval.runner import create_standard_conditions
+from hitloop.scenarios import EmailDraftScenario
 
 # Setup
 logger = TelemetryLogger("experiment.db")
@@ -233,7 +233,7 @@ runner.export_results("results.csv", "summary.json")
 
 ## Research Alignment
 
-HITL Lab metrics map directly to the research framework:
+hitloop metrics map directly to the research framework:
 
 | Metric | Research Concept | Description |
 |--------|------------------|-------------|
@@ -249,7 +249,7 @@ HITL Lab metrics map directly to the research framework:
 The error injector provides ground truth for measuring oversight effectiveness:
 
 ```python
-from hitl_lab.eval import ErrorInjector, InjectionConfig
+from hitloop.eval import ErrorInjector, InjectionConfig
 
 injector = ErrorInjector(InjectionConfig(
     injection_rate=0.2,
@@ -270,8 +270,8 @@ if result.injected:
 ## Project Structure
 
 ```
-hitl_lab/
-├── src/hitl_lab/
+hitloop/
+├── src/hitloop/
 │   ├── core/
 │   │   ├── models.py      # Action, Decision, TraceEvent
 │   │   ├── interfaces.py  # ApprovalBackend, HITLPolicy
@@ -345,11 +345,11 @@ pip install -e ".[dev]"
 pytest
 
 # Type checking
-mypy src/hitl_lab
+mypy src/hitloop
 
 # Linting
-ruff check src/hitl_lab
-ruff format src/hitl_lab
+ruff check src/hitloop
+ruff format src/hitloop
 ```
 
 ## License

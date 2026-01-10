@@ -15,9 +15,9 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from hitl_lab import TelemetryLogger
-from hitl_lab.eval.runner import ExperimentRunner, create_standard_conditions
-from hitl_lab.scenarios.email_draft import EmailDraftScenario
+from hitloop import TelemetryLogger
+from hitloop.eval.runner import ExperimentRunner, create_standard_conditions
+from hitloop.scenarios.email_draft import EmailDraftScenario
 
 
 async def main() -> None:

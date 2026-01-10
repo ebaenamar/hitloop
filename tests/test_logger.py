@@ -4,8 +4,8 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from hitl_lab.core.logger import TelemetryLogger
-from hitl_lab.core.models import (
+from hitloop.core.logger import TelemetryLogger
+from hitloop.core.models import (
     Action,
     ApprovalRequest,
     Decision,

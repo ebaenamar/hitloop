@@ -3,7 +3,7 @@
 import pytest
 from datetime import datetime, timezone
 
-from hitl_lab.core.models import (
+from hitloop.core.models import (
     Action,
     ApprovalRequest,
     Decision,

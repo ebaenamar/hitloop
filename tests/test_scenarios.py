@@ -4,9 +4,9 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from hitl_lab.core.models import RiskClass
-from hitl_lab.scenarios.email_draft import EmailDraftScenario
-from hitl_lab.scenarios.record_update import RecordUpdateScenario
+from hitloop.core.models import RiskClass
+from hitloop.scenarios.email_draft import EmailDraftScenario
+from hitloop.scenarios.record_update import RecordUpdateScenario
 
 
 class TestEmailDraftScenario:

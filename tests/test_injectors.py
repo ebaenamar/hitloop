@@ -2,8 +2,8 @@
 
 import pytest
 
-from hitl_lab.core.models import Action, RiskClass
-from hitl_lab.eval.injectors import (
+from hitloop.core.models import Action, RiskClass
+from hitloop.eval.injectors import (
     ErrorInjector,
     InjectionConfig,
     InjectionType,

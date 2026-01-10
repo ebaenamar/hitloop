@@ -1,12 +1,12 @@
 [project]
-name = "hitl-lab"
+name = "hitloop"
 version = "0.1.0"
-description = "Human-in-the-Loop (HITL) control library for AI agent workflows with LangGraph integration"
+description = "Keep humans in the loop. HITL control library for AI agent workflows with LangGraph."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
 authors = [
-    {name = "HITL Lab Contributors"}
+    {name = "hitloop contributors"}
 ]
 keywords = ["hitl", "human-in-the-loop", "langgraph", "ai-agents", "research"]
 classifiers = [
@@ -44,20 +44,20 @@ dev = [
     "mypy>=1.8.0",
 ]
 all = [
-    "hitl-lab[server,humanlayer,dev]",
+    "hitloop[server,humanlayer,dev]",
 ]
 
 [project.urls]
-Homepage = "https://github.com/hitl-lab/hitl-lab"
-Documentation = "https://github.com/hitl-lab/hitl-lab#readme"
-Repository = "https://github.com/hitl-lab/hitl-lab"
+Homepage = "https://github.com/ebaenamar/hitloop"
+Documentation = "https://github.com/ebaenamar/hitloop#readme"
+Repository = "https://github.com/ebaenamar/hitloop"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/hitl_lab"]
+packages = ["src/hitloop"]
 
 [tool.ruff]
 target-version = "py311"
@@ -82,7 +82,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["hitl_lab"]
+known-first-party = ["hitloop"]
 
 [tool.mypy]
 python_version = "3.11"
