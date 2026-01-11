@@ -8,6 +8,9 @@ from hitloop.langgraph.interrupt_nodes import (
     HumanResponse,
     ActionRequest,
     InterruptCallback,
+    # Type aliases for decorators
+    RiskClassResolver,
+    AnomalyValidator,
     # Legacy aliases
     HITLInterruptPayload,
     HITLResumePayload,
@@ -15,6 +18,8 @@ from hitloop.langgraph.interrupt_nodes import (
     create_interrupt_gate_node,
     create_interrupt_tool_node,
     should_execute,
+    # Decorator
+    hitl_action,
 )
 
 __all__ = [
@@ -25,9 +30,12 @@ __all__ = [
     "HumanResponse",
     "ActionRequest",
     "InterruptCallback",
+    "RiskClassResolver",
+    "AnomalyValidator",
     "HITLInterruptPayload",
     "HITLResumePayload",
     "create_interrupt_gate_node",
     "create_interrupt_tool_node",
     "should_execute",
+    "hitl_action",
 ]
