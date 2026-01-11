@@ -169,16 +169,20 @@ def create_interrupt_gate_node(
             "description": description,
         }
         
-        # Use LangGraph's native interrupt - this pauses the graph
-        # and waits for Command(resume=...) to continue
-        # agent-inbox returns a list with a single HumanResponse
-        resume_value = interrupt(interrupt_payload)
+        # Use LangGraph's native interrupt - MUST pass a list like the official example
+        # See: https://github.com/langchain-ai/agent-inbox-langgraph-example
+        # agent-inbox expects interrupt([request]) and returns the response
+        resume_value = interrupt([interrupt_payload])
         
-        # Handle both list (from agent-inbox) and dict (from manual resume)
-        if isinstance(resume_value, list):
-            response: HumanResponse = resume_value[0] if resume_value else {"type": "ignore", "args": None}
-        else:
+        # The resume value can be:
+        # - A list with one HumanResponse (from agent-inbox)
+        # - A single HumanResponse dict (from manual Command(resume=...))
+        if isinstance(resume_value, list) and len(resume_value) > 0:
+            response: HumanResponse = resume_value[0]
+        elif isinstance(resume_value, dict):
             response = resume_value
+        else:
+            response = {"type": "ignore", "args": None}
         
         # Parse the response based on type
         response_type = response.get("type", "ignore")
