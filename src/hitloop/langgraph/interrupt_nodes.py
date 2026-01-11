@@ -64,9 +64,14 @@ HITLInterruptPayload = HumanInterrupt
 HITLResumePayload = HumanResponse
 
 
+# Type alias for interrupt callback
+InterruptCallback = Callable[[HumanInterrupt, str], Any]  # (payload, thread_id) -> Any
+
+
 def create_interrupt_gate_node(
     policy: HITLPolicy,
     logger: TelemetryLogger | None = None,
+    on_interrupt: InterruptCallback | None = None,
 ) -> Callable[[dict[str, Any]], dict[str, Any] | Command]:
     """Create a HITL gate node using LangGraph's native interrupt().
     
@@ -77,6 +82,8 @@ def create_interrupt_gate_node(
     Args:
         policy: The HITL policy to determine when approval is needed
         logger: Optional telemetry logger for instrumentation
+        on_interrupt: Optional callback called when an interrupt is created.
+            Receives (payload, thread_id) - useful for sending webhooks/push notifications.
         
     Returns:
         A node function that can be added to a LangGraph StateGraph
@@ -168,6 +175,20 @@ def create_interrupt_gate_node(
             },
             "description": description,
         }
+        
+        # Call webhook/notification callback if provided
+        if on_interrupt:
+            thread_id = state.get("configurable", {}).get("thread_id", run_id)
+            try:
+                result = on_interrupt(interrupt_payload, thread_id)
+                # Handle async callbacks
+                import asyncio
+                if asyncio.iscoroutine(result):
+                    asyncio.get_event_loop().run_until_complete(result)
+            except Exception as e:
+                # Don't fail the interrupt if webhook fails
+                if logger:
+                    logger.logger.warning(f"on_interrupt callback failed: {e}")
         
         # Use LangGraph's native interrupt - MUST pass a list like the official example
         # See: https://github.com/langchain-ai/agent-inbox-langgraph-example
